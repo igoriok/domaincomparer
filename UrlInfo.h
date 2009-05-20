@@ -12,8 +12,8 @@ public:
 
     UrlInfo(const UrlInfo & other);
     UrlInfo & operator =(const UrlInfo & other);
-    bool operator ==(const UrlInfo & other);
-    static UrlInfo compare(const WebResponse & prev, const WebResponse & live);
+    bool operator ==(const UrlInfo & other) const;
+    static UrlInfo compare(const QUrl & url, const QUrl & parent, const WebResponse & live, const WebResponse & prev);
     friend uint qHash(const UrlInfo & ui);
 
     bool isValid() const { return m_valid; }

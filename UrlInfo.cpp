@@ -34,12 +34,12 @@ UrlInfo & UrlInfo::operator =(const UrlInfo & other)
     return *this;
 }
 
-bool UrlInfo::operator ==(const UrlInfo & other)
+bool UrlInfo::operator ==(const UrlInfo & other) const
 {
     return (m_url == other.m_url);
 }
 
-UrlInfo UrlInfo::compare(const WebResponse & prev, const WebResponse & live)
+UrlInfo UrlInfo::compare(const QUrl & url, const QUrl & parent, const WebResponse & live, const WebResponse & prev)
 {
     UrlInfo ui;
 
