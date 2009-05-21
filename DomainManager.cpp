@@ -17,8 +17,6 @@ DomainManager::DomainManager(const QString & domain, const QHostAddress & host, 
         m_state = LiveSwitched;
     else
         m_state = LiveOk;
-
-    m_check.insert(UrlInfo(QUrl(QString("http://%1/").arg(m_domain)), QUrl()));
 }
 
 DomainManager::DomainManager(const DomainManager & other):
@@ -36,6 +34,35 @@ DomainManager & DomainManager::operator =(const DomainManager & other)
     return *this;
 }
 
+int DomainManager::count(UrlInfo::UrlState state) const
+{
+    int count = 0;
+    for(QSet<UrlInfo>::const_iterator iter = m_urls.constBegin(); iter != m_urls.constEnd(); iter++)
+    {
+        if ((*iter).state() == state)
+            count++;
+    }
+    return count;
+}
+
+QString DomainManager::stateString() const
+{
+    QString str;
+    switch(m_state)
+    {
+        case LiveOk:
+            str.append("OK");
+            break;
+        case LiveNotFound:
+            str.append("NOT FOUND");
+            break;
+        case LiveSwitched:
+            str.append("SWITCHED");
+            break;
+    }
+    return str;
+}
+
 void DomainManager::check(WebManager * manager)
 {
     if (manager != NULL)
@@ -43,12 +70,48 @@ void DomainManager::check(WebManager * manager)
         this->manager = manager;
         this->connect(manager, SIGNAL(ready(WebResponse,WebResponse)), SLOT(on_manager_ready(WebResponse, WebResponse)));
 
+        m_urls.clear();
+        m_check.clear();
+        m_check.insert(UrlInfo(QUrl(QString("http://%1/").arg(m_domain)), QUrl()));
+
         checkNext();
     }
     else
     {
         emit ready();
     }
+}
+
+void DomainManager::checkNext()
+{
+    if (!m_check.isEmpty())
+    {
+        QSet<UrlInfo>::iterator iter = m_check.begin();
+        m_current = (*iter);
+        m_check.erase(iter);
+
+        manager->get(m_current.url(), m_host);
+    }
+    else
+    {
+        m_current.clear();
+
+        manager->disconnect(this);
+        manager = NULL;
+
+        emit ready();
+    }
+}
+
+void DomainManager::abort()
+{
+    manager->disconnect(this);
+    manager->abort();
+    manager = NULL;
+
+    m_current.clear();
+
+    emit ready();
 }
 
 void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
@@ -126,40 +189,19 @@ bool DomainManager::compareHost(QString orig, QString comp)
     return (orig == comp);
 }
 
-void DomainManager::checkNext()
-{
-    if (!m_check.isEmpty())
-    {
-        QSet<UrlInfo>::iterator iter = m_check.begin();
-        current = (*iter);
-        m_check.erase(iter);
-
-        manager->get(current.url(), m_host);
-    }
-    else
-    {
-        current.clear();
-
-        manager->disconnect(this);
-        manager = NULL;
-
-        emit ready();
-    }
-}
-
 void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse & prev)
 {
-    current.compare(live, prev);
-    m_urls.insert(current);
+    m_current.compare(live, prev);
+    m_urls.insert(m_current);
 
     if (((live.code() / 100) == 2) &&
         live.type().startsWith(QString("text/")))
     {
         QByteArray data(live.data());
         data.replace('\0', ' ');
-        findNewUrls(current.url(), QString(data));
+        findNewUrls(m_current.url(), QString(data));
     }
-    qDebug(QString("Checked %1 - %2 - %3").arg(current.url().toString()).arg(current.stateString()).arg(current.code()).toAscii());
 
+    emit checked(m_current);
     checkNext();
 }

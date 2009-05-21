@@ -9,10 +9,14 @@ SOURCES += main.cpp \
     WebManager.cpp \
     WebResponse.cpp \
     DomainManager.cpp \
-    UrlInfo.cpp
+    UrlInfo.cpp \
+    DomainInfo.cpp
 HEADERS += MainWindow.h \
     WebManager.h \
     WebResponse.h \
     DomainManager.h \
-    UrlInfo.h
-FORMS += MainWindow.ui
+    UrlInfo.h \
+    DomainInfo.h
+FORMS += MainWindow.ui \
+    DomainInfo.ui \
+    AddRange.ui

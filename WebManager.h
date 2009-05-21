@@ -18,6 +18,7 @@ public:
     void abort();
 
 signals:
+    void sending(const QString & method, const QUrl & url);
     void ready(const WebResponse & live, const WebResponse & prev);
 
 private:

@@ -23,10 +23,12 @@ void WebManager::get(const QUrl & url, const QHostAddress & host)
     QNetworkRequest req1(url),
                     req2(purl);
     req2.setRawHeader(QByteArray("Host"), url.host().toAscii());
+    QString method;
 
     if (_ext.contains(url.path().right(4).toLower()))
     {
         // Sending HEAD request
+        method.append("HEAD");
         if (host.isNull())
         {
             req1.setAttribute(QNetworkRequest::User, QVariant(1));
@@ -41,6 +43,7 @@ void WebManager::get(const QUrl & url, const QHostAddress & host)
     else
     {
         // Sendign GET request
+        method.append("GET");
         if (host.isNull())
         {
             req1.setAttribute(QNetworkRequest::User, QVariant(1));
@@ -52,6 +55,7 @@ void WebManager::get(const QUrl & url, const QHostAddress & host)
             prev = manager->get(req2);
         }
     }
+    emit sending(method, url);
 }
 
 void WebManager::abort()

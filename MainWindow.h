@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QtGui/QMainWindow>
+#include <QListWidgetItem>
 #include "DomainManager.h"
 
 namespace Ui
@@ -17,14 +18,25 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    DomainManager * dmanager;
     WebManager * wmanager;
 
 private:
     Ui::MainWindowClass *ui;
 
+    QHash<QListWidgetItem *, DomainManager *> m_childs;
+    QListWidgetItem * m_current;
+
 protected slots:
-    void on_dmanager_ready();
+    void on_wmanager_sending(const QString & method, const QUrl & url);
+    void dmanager_ready();
+    void dmanager_checked(const UrlInfo & ui);
+
+private slots:
+    void on_actionStart_triggered();
+    void on_actionStop_triggered();
+    void on_actionAppend_triggered();
+    void on_domains_itemSelectionChanged();
+    void on_actionClear_triggered();
 };
 
 #endif // MAINWINDOW_H
