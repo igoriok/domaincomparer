@@ -11,19 +11,21 @@ class WebManager : public QObject
     Q_OBJECT
 
 public:
-    WebManager();
+    WebManager(QObject * parent = NULL);
     ~WebManager();
 
     void get(const QUrl & url, const QHostAddress & host = QHostAddress());
+    void abort();
 
 signals:
     void ready(const WebResponse & live, const WebResponse & prev);
 
 private:
     QNetworkAccessManager * manager;
+    QNetworkReply * live;
+    QNetworkReply * prev;
 
     WebResponse _temp;
-    bool _isBusy;
     QSet<QString> _ext;
 
 protected slots:
