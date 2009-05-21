@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>400</height>
+    <width>774</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,8 +38,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
-     <height>24</height>
+     <width>774</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuAction">
@@ -47,20 +47,21 @@
      <string>Action</string>
     </property>
     <addaction name="actionClear"/>
-    <addaction name="actionCheck"/>
    </widget>
    <addaction name="menuAction"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="floatable">
+    <bool>true</bool>
+   </property>
    <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
+    <enum>LeftToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
    <addaction name="actionStart"/>
    <addaction name="actionStop"/>
-   <addaction name="actionCheck"/>
    <addaction name="separator"/>
    <addaction name="actionAppend"/>
    <addaction name="actionClear"/>
@@ -69,11 +70,6 @@
   <action name="actionClear">
    <property name="text">
     <string>Clear</string>
-   </property>
-  </action>
-  <action name="actionCheck">
-   <property name="text">
-    <string>Check</string>
    </property>
   </action>
   <action name="actionStart">

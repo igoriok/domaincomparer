@@ -105,13 +105,11 @@ void DomainManager::checkNext()
 
 void DomainManager::abort()
 {
-    manager->disconnect(this);
     manager->abort();
+    manager->disconnect(this);
     manager = NULL;
 
     m_current.clear();
-
-    emit ready();
 }
 
 void DomainManager::findNewUrls(const QUrl & parent, const QString & html)

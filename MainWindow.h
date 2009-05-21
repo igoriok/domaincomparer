@@ -25,6 +25,7 @@ private:
 
     QHash<QListWidgetItem *, DomainManager *> m_childs;
     QListWidgetItem * m_current;
+    bool isBatch;
 
 protected slots:
     void on_wmanager_sending(const QString & method, const QUrl & url);
@@ -35,8 +36,8 @@ private slots:
     void on_actionStart_triggered();
     void on_actionStop_triggered();
     void on_actionAppend_triggered();
-    void on_domains_itemSelectionChanged();
     void on_actionClear_triggered();
+    void on_domains_itemSelectionChanged();
 };
 
 #endif // MAINWINDOW_H

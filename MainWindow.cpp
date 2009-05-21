@@ -21,14 +21,10 @@ void MainWindow::on_wmanager_sending(const QString & method, const QUrl & url)
 
 void MainWindow::dmanager_ready()
 {
-    if (m_current != NULL)
-    {
-        DomainManager * dmanager = m_childs.value(m_current);
-        dmanager->disconnect(this);
-    }
+    DomainManager * dmanager = m_childs.value(m_current);
+    dmanager->disconnect(this);
 
-    int index = (m_current == NULL) ? -1 : ui->domains->row(m_current);
-    index++;
+    int index = ui->domains->row(m_current) + 1;
 
     if (index < ui->domains->count())
     {
@@ -43,7 +39,7 @@ void MainWindow::dmanager_ready()
     else
     {
         m_current = NULL;
-        ui->actionCheck->setEnabled(true);
+        ui->actionStart->setEnabled(true);
     }
 }
 
@@ -51,18 +47,8 @@ void MainWindow::dmanager_checked(const UrlInfo & ui)
 {
     if (m_current == this->ui->domains->currentItem())
     {
-        this->ui->domainInfo->updateData(ui, m_childs.value(m_current)->total(), m_childs.value(m_current)->count());
+        this->ui->domainInfo->updateData(ui, m_childs.value(m_current)->total());
     }
-}
-
-void MainWindow::on_actionClear_triggered()
-{
-    foreach(DomainManager * manager, m_childs)
-    {
-        delete manager;
-    }
-    m_childs.clear();
-    ui->domains->clear();
 }
 
 void MainWindow::on_domains_itemSelectionChanged()
@@ -70,8 +56,37 @@ void MainWindow::on_domains_itemSelectionChanged()
     QListWidgetItem * item = ui->domains->currentItem();
     if (item != NULL)
     {
-        DomainManager * manager = m_childs.value(item);
-        ui->domainInfo->setData(manager->result().toList(), manager->stateString(), manager->total(), manager->count());
+        DomainManager * dmanager = m_childs.value(item);
+        ui->domainInfo->setData(dmanager->result().toList(), dmanager->stateString(), dmanager->total());
+    }
+}
+
+void MainWindow::on_actionStart_triggered()
+{
+    if (m_childs.size() > 0)
+    {
+        ui->actionStart->setEnabled(false);
+        m_current = ui->domains->item(0);
+
+        DomainManager * dmanager = m_childs.value(m_current);
+        this->connect(dmanager, SIGNAL(ready()), SLOT(dmanager_ready()));
+        this->connect(dmanager, SIGNAL(checked(UrlInfo)), SLOT(dmanager_checked(UrlInfo)));
+
+        dmanager->check(wmanager);
+        ui->actionStop->setEnabled(true);
+    }
+}
+
+void MainWindow::on_actionStop_triggered()
+{
+    if (m_current != NULL)
+    {
+        DomainManager * dmanager = m_childs.value(m_current);
+        dmanager->abort();
+        dmanager->disconnect(this);
+
+        m_current = NULL;
+        ui->actionStart->setEnabled(true);
     }
 }
 
@@ -101,27 +116,14 @@ void MainWindow::on_actionAppend_triggered()
     }
 }
 
-void MainWindow::on_actionStart_triggered()
+void MainWindow::on_actionClear_triggered()
 {
-    if (m_childs.size() > 0)
+    foreach(DomainManager * manager, m_childs)
     {
-        ui->actionStart->setEnabled(false);
-        m_current = NULL;
-
-        dmanager_ready();
+        delete manager;
     }
-}
-
-void MainWindow::on_actionStop_triggered()
-{
-    if (m_current != NULL)
-    {
-        m_childs.value(m_current)->abort();
-        m_childs.value(m_current)->disconnect(this);
-
-        m_current = NULL;
-        ui->actionStart->setEnabled(true);
-    }
+    m_childs.clear();
+    ui->domains->clear();
 }
 
 MainWindow::~MainWindow()

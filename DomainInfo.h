@@ -15,8 +15,9 @@ public:
     explicit DomainInfo(QWidget *parent = 0);
     virtual ~DomainInfo();
 
-    void setData(const QList<UrlInfo> & data, QString state, int total, int checked);
-    void updateData(const UrlInfo & data, int total, int checked);
+    void setData(const QList<UrlInfo> & data, QString state, int total);
+    void updateData(const UrlInfo & data, int total);
+    void clearData();
 
 protected:
     virtual void changeEvent(QEvent *e);
@@ -31,7 +32,7 @@ private:
 
 private slots:
     void on_checkBox_ViewShowAll_toggled(bool checked);
-    void setData(const QList<UrlInfo> & data, QString state, int total, int checked, bool update);
+    void setData(const QList<UrlInfo> & data, QString state, int total, bool update);
 };
 
 #endif // DOMAININFO_H

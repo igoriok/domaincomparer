@@ -1,12 +1,12 @@
 #include "UrlInfo.h"
 
 UrlInfo::UrlInfo():
-        m_valid(false)
+        m_valid(false), m_code(0), m_length(0), m_state(UrlOk)
 {
 }
 
 UrlInfo::UrlInfo(const QUrl & url, const QUrl & parent):
-        m_url(url), m_parent(parent), m_valid(true), m_checked(false)
+        m_url(url), m_parent(parent), m_code(0), m_length(0), m_state(UrlOk), m_valid(true), m_checked(false)
 {
 }
 
@@ -17,17 +17,27 @@ UrlInfo::UrlInfo(const UrlInfo & other)
         m_valid = true;
         m_url = other.m_url;
         m_parent = other.m_parent;
-        if (other.m_checked)
+        m_checked = other.m_checked;
+        if (m_checked)
         {
-            m_checked = true;
             m_code = other.m_code;
             m_type = other.m_type;
+            m_length = other.m_length;
+            m_state = other.m_state;
+            m_desc = other.m_desc;
+        }
+        else
+        {
+            m_code = 0;
+            m_type.clear();
+            m_length = 0;
+            m_state = UrlOk;
+            m_desc.clear();
         }
     }
     else
     {
-        m_valid = false;
-        m_checked = false;
+        clear();
     }
 }
 
@@ -38,11 +48,14 @@ UrlInfo & UrlInfo::operator =(const UrlInfo & other)
         m_valid = true;
         m_url = other.m_url;
         m_parent = other.m_parent;
-        if (other.m_checked)
+        m_checked = other.m_checked;
+        if (m_checked)
         {
-            m_checked = true;
             m_code = other.m_code;
             m_type = other.m_type;
+            m_length = other.m_length;
+            m_state = other.m_state;
+            m_desc = other.m_desc;
         }
         else
         {
@@ -62,7 +75,7 @@ UrlInfo & UrlInfo::operator =(const UrlInfo & other)
 
 bool UrlInfo::operator ==(const UrlInfo & other) const
 {
-    return ((m_url.host() == other.m_url.host()) && (m_url.path() == other.m_url.path()));
+    return ((m_url.host() + m_url.path()) == (other.m_url.host() + other.m_url.path()));
 }
 
 QString UrlInfo::stateString() const
@@ -103,11 +116,6 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
     if (m_valid)
     {
         // comparation code
-        m_code = live.code();
-        m_type = live.type();
-        m_length = live.length();
-        m_checked = true;
-
         if (prev.isNull())
         {
             switch (m_code / 100)
@@ -156,6 +164,11 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
             }
         }
     }
+
+    m_code = live.code();
+    m_type = live.type();
+    m_length = live.length();
+    m_checked = true;
 }
 
 uint qHash(const UrlInfo & ui)
