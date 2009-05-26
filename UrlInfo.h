@@ -18,9 +18,10 @@ public:
 
     enum UrlState
     {
-        UrlOk,
+        UrlNotChecked,
+        UrlError,
         UrlWarning,
-        UrlError
+        UrlOk
     };
 
     const QUrl & url() const { return m_url; }
@@ -32,7 +33,7 @@ public:
     const QString & desc() const { return m_desc; }
 
     bool isValid() const { return m_valid; }
-    bool isChecked() const { return m_checked; }
+    bool isChecked() const { return (m_state != UrlNotChecked); }
     QString stateString() const;
     void clear();
 
@@ -46,7 +47,7 @@ private:
     QString m_desc;
 
     bool m_valid;
-    bool m_checked;
+    //bool m_checked;
 
     friend uint qHash(const UrlInfo & ui);
 };

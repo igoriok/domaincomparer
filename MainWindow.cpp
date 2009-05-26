@@ -124,6 +124,7 @@ void MainWindow::on_actionAppend_triggered()
                 QListWidgetItem * item = new QListWidgetItem(domain);
                 ui->domains->addItem(item);
                 DomainManager * dmanageer = new DomainManager(domain, QHostAddress(host), this);
+                dmanageer->setLimit(3, 300, 1000);
                 m_childs.insert(item, dmanageer);
             }
         }
@@ -139,12 +140,8 @@ void MainWindow::on_actionClear_triggered()
     if (m_current != NULL)
         on_actionStop_triggered();
 
-    QList<DomainManager *> dmanager = m_childs.values();
-    for(int i = 0; i < dmanager.size(); i++ )
-    {
-        delete dmanager[i];
-    }
-    m_childs.clear();
+    while(m_childs.size() > 0)
+        delete m_childs.take(m_childs.constBegin().key());
     ui->domains->clear();
 }
 

@@ -1,12 +1,12 @@
 #include "UrlInfo.h"
 
 UrlInfo::UrlInfo():
-        m_valid(false), m_code(0), m_length(0), m_state(UrlOk)
+        m_code(0), m_length(0), m_state(UrlNotChecked), m_valid(false)
 {
 }
 
 UrlInfo::UrlInfo(const QUrl & url, const QUrl & parent):
-        m_url(url), m_parent(parent), m_code(0), m_length(0), m_state(UrlOk), m_valid(true), m_checked(false)
+        m_url(url), m_parent(parent), m_code(0), m_length(0), m_state(UrlNotChecked), m_valid(true)
 {
 }
 
@@ -17,13 +17,12 @@ UrlInfo::UrlInfo(const UrlInfo & other)
         m_valid = true;
         m_url = other.m_url;
         m_parent = other.m_parent;
-        m_checked = other.m_checked;
-        if (m_checked)
+        m_state = other.m_state;
+        if (m_state != UrlNotChecked)
         {
             m_code = other.m_code;
             m_type = other.m_type;
             m_length = other.m_length;
-            m_state = other.m_state;
             m_desc = other.m_desc;
         }
         else
@@ -31,7 +30,6 @@ UrlInfo::UrlInfo(const UrlInfo & other)
             m_code = 0;
             m_type.clear();
             m_length = 0;
-            m_state = UrlOk;
             m_desc.clear();
         }
     }
@@ -48,13 +46,12 @@ UrlInfo & UrlInfo::operator =(const UrlInfo & other)
         m_valid = true;
         m_url = other.m_url;
         m_parent = other.m_parent;
-        m_checked = other.m_checked;
-        if (m_checked)
+        m_state = other.m_state;
+        if (m_state != UrlNotChecked)
         {
             m_code = other.m_code;
             m_type = other.m_type;
             m_length = other.m_length;
-            m_state = other.m_state;
             m_desc = other.m_desc;
         }
         else
@@ -62,7 +59,6 @@ UrlInfo & UrlInfo::operator =(const UrlInfo & other)
             m_code = 0;
             m_type.clear();
             m_length = 0;
-            m_state = UrlOk;
             m_desc.clear();
         }
     }
@@ -83,14 +79,17 @@ QString UrlInfo::stateString() const
     QString str;
     switch(m_state)
     {
-        case UrlOk:
-            str.append("OK");
+        case UrlNotChecked:
+            str.append("NOT CHECKED");
+            break;
+        case UrlError:
+            str.append("ERROR");
             break;
         case UrlWarning:
             str.append("WARNING");
             break;
-        case UrlError:
-            str.append("ERROR");
+        case UrlOk:
+            str.append("OK");
             break;
     }
     return str;
@@ -99,13 +98,12 @@ QString UrlInfo::stateString() const
 void UrlInfo::clear()
 {
     m_valid = false;
-    m_checked = false;
     m_url.clear();
     m_parent.clear();
     m_code = 0;
     m_type.clear();
     m_length = 0;
-    m_state = UrlOk;
+    m_state = UrlNotChecked;
     m_desc.clear();
 }
 
@@ -168,8 +166,6 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
             }
         }
     }
-
-    m_checked = true;
 }
 
 uint qHash(const UrlInfo & ui)

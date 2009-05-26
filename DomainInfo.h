@@ -24,15 +24,14 @@ protected:
 
 private:
     Ui::DomainInfoWidget *m_ui;
-    int m_different;
-    QList<UrlInfo> m_cache;
+    QHash<UrlInfo::UrlState, UrlInfo> m_cache;
 
     void addNewLine(const UrlInfo & data);
     void updateView(int total, int checked);
 
 private slots:
+    void on_checkBox_ViewShowAll_stateChanged(int );
     void on_checkBox_ViewShowAll_toggled(bool checked);
-    void setData(const QList<UrlInfo> & data, QString state, int total, bool update);
 };
 
 #endif // DOMAININFO_H

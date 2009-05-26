@@ -3,7 +3,7 @@
 #include "DomainManager.h"
 
 DomainManager::DomainManager(const QString & domain, const QHostAddress & host, QObject * parent):
-        QObject(parent)
+        QObject(parent), m_depth_limit(0), m_count_limit(0), m_max_count_limit(0)
 {
     m_domain = domain.toLower();
     if (!m_domain.startsWith(QString("www.")))
@@ -22,7 +22,13 @@ DomainManager::DomainManager(const QString & domain, const QHostAddress & host, 
 DomainManager::DomainManager(const DomainManager & other):
         QObject(NULL)
 {
-    DomainManager(other.m_domain, other.m_host);
+    m_depth_limit = other.m_depth_limit;
+    m_count_limit = other.m_count_limit;
+    m_max_count_limit = other.m_max_count_limit;
+
+    m_domain = other.m_domain;
+    m_host = other.m_host;
+    m_state = other.m_state;
 }
 
 DomainManager & DomainManager::operator =(const DomainManager & other)
@@ -61,6 +67,13 @@ QString DomainManager::stateString() const
             break;
     }
     return str;
+}
+
+void DomainManager::setLimit(int depth, int count, int max_count)
+{
+    if (depth >= 0) m_depth_limit = depth;
+    if (count >= 0) m_count_limit = count;
+    if (max_count >= 0) m_max_count_limit = max_count;
 }
 
 void DomainManager::check(WebManager * manager)
@@ -195,9 +208,32 @@ void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse
     if (((live.code() / 100) == 2) &&
         live.type().startsWith(QString("text/")))
     {
-        QByteArray data(live.data());
-        data.replace('\0', ' ');
-        findNewUrls(m_current.url(), QString(data));
+        int depth = 0;
+        if (m_depth_limit > 0)
+        {
+            UrlInfo ui(m_current.parent(), QUrl());
+            while (!ui.url().isEmpty())
+            {
+                QSet<UrlInfo>::const_iterator f = m_urls.constFind(ui);
+                if (f == m_urls.constEnd())
+                    ui = UrlInfo((*m_check.constFind(ui)).parent(), QUrl());
+                else
+                    ui = UrlInfo((*f).parent(), QUrl());
+                depth++;
+            }
+        }
+
+        int cnt = m_urls.size() + m_check.size();
+        bool ch = true;
+
+        if (!(m_max_count_limit != 0 && cnt >= m_max_count_limit) && // если не перевалило максимум
+            (!(m_count_limit != 0 && cnt >= m_count_limit) || // если не перевалило ограничение
+            ((m_count_limit != 0 && cnt >= m_count_limit) && depth <= m_depth_limit))) // или перевалило но глубина позволяет
+        {
+            QByteArray data(live.data());
+            data.replace('\0', ' ');
+            findNewUrls(m_current.url(), QString(data));
+        }
     }
 
     emit checked(m_current);

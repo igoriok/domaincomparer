@@ -24,6 +24,8 @@ public:
     };
 
     // Геттеры
+    const QString & domain() const { return m_domain; }
+    QString host() const { return m_host.toString(); }
     const QSet<UrlInfo> & result() const { return m_urls; }
     const QUrl & current() const { return m_current.url(); }
     int total() const { return m_check.size() + m_urls.size(); }
@@ -31,6 +33,9 @@ public:
     int count(UrlInfo::UrlState state) const;
     LiveState state() const { return m_state; }
     QString stateString() const;
+
+    // Setters
+    void setLimit(int depth = 0, int count = 0, int max_count = 0);
 
 public slots:
     // Внешние слоты

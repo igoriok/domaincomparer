@@ -1,5 +1,6 @@
 #include "WebManager.h"
 #include <QVariant>
+#include <QStringList>
 
 WebManager::WebManager(QObject * parent):
         QObject(parent)
@@ -102,7 +103,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
         else
             length = data.length();
 
-        WebResponse current(type, reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), data, length);
+        WebResponse current(type.split(QChar(';')).at(0), reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), data, length);
 
         if (_temp.isNull() && request.attribute(QNetworkRequest::User).isNull())
         {

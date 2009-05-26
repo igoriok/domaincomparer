@@ -6,7 +6,6 @@ DomainInfo::DomainInfo(QWidget *parent) :
     m_ui(new Ui::DomainInfoWidget)
 {
     m_ui->setupUi(this);
-    m_different = 0;
 }
 
 void DomainInfo::addNewLine(const UrlInfo & data)
@@ -26,36 +25,25 @@ void DomainInfo::updateView(int total, int checked)
 {
     m_ui->lineEdit_UrlTotal->setText(QString::number(total));
     m_ui->lineEdit_UrlChecked->setText(QString::number(checked));
-    m_ui->lineEdit_UrlDifferent->setText(QString::number(m_different));
+    m_ui->lineEdit_UrlDifferent->setText(QString::number(m_cache.count(UrlInfo::UrlError)));
 }
 
 void DomainInfo::setData(const QList<UrlInfo> & data, QString state, int total)
 {
-    setData(data, state, total, false);
-}
-
-void DomainInfo::setData(const QList<UrlInfo> & data, QString state, int total, bool update)
-{
-    if (!update)
-    {
-        m_cache.clear();
-        m_cache.append(data);
-    }
+    m_cache.clear();
 
     m_ui->tableWidget_urls->clearContents();
     m_ui->tableWidget_urls->setRowCount(0);
 
-    m_different = 0;
     m_ui->lineEdit_DNSStatus->setText(state);
     m_ui->tableWidget_urls->setSortingEnabled(false);
     for (int i = 0; i < data.size(); i++)
     {
         const UrlInfo & result = data.at(i);
 
-        if (result.state() != UrlInfo::UrlOk)
-            m_different++;
+        m_cache.insertMulti(result.state(), result);
 
-        if (result.isChecked())
+        if (result.state() != UrlInfo::UrlNotChecked)
         {
             if (result.state() != UrlInfo::UrlOk)
             {
@@ -72,20 +60,28 @@ void DomainInfo::setData(const QList<UrlInfo> & data, QString state, int total, 
 
 void DomainInfo::updateData(const UrlInfo & data, int total)
 {
-    m_cache.append(data);
+    m_cache.insertMulti(data.state(), data);
+    m_ui->tableWidget_urls->setSortingEnabled(false);
     if (data.state() != UrlInfo::UrlOk)
     {
-        m_different++;
         addNewLine(data);
     }
     else
         if (m_ui->checkBox_ViewShowAll->isChecked())
             addNewLine(data);
+    m_ui->tableWidget_urls->setSortingEnabled(true);
     updateView(total, m_cache.size());
 }
 
 void DomainInfo::clearData()
 {
+    m_ui->lineEdit_DNSStatus->clear();
+    m_ui->lineEdit_UrlChecked->clear();
+    m_ui->lineEdit_UrlDifferent->clear();
+    m_ui->lineEdit_UrlTotal->clear();
+
+    m_ui->tableWidget_urls->clearContents();
+    m_ui->tableWidget_urls->setRowCount(0);
 }
 
 void DomainInfo::on_checkBox_ViewShowAll_toggled(bool checked)
@@ -94,9 +90,8 @@ void DomainInfo::on_checkBox_ViewShowAll_toggled(bool checked)
     m_ui->tableWidget_urls->setRowCount(0);
 
     m_ui->tableWidget_urls->setSortingEnabled(false);
-    for (int i = 0; i < m_cache.size(); i++)
+    foreach(const UrlInfo & result, m_cache)
     {
-        const UrlInfo & result = m_cache.at(i);
         if (result.isChecked())
         {
             if (result.state() != UrlInfo::UrlOk)
@@ -125,4 +120,9 @@ void DomainInfo::changeEvent(QEvent *e)
 DomainInfo::~DomainInfo()
 {
     delete m_ui;
+}
+
+void DomainInfo::on_checkBox_ViewShowAll_stateChanged(int )
+{
+
 }
