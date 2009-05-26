@@ -23,6 +23,10 @@ void MainWindow::dmanager_ready()
 {
     DomainManager * dmanager = m_childs.value(m_current);
     dmanager->disconnect(this);
+    if(dmanager->count(UrlInfo::UrlError) > 0)
+        m_current->setBackgroundColor(QColor(Qt::red));
+    else
+        m_current->setBackgroundColor(QColor(Qt::green));
 
     int index = ui->domains->row(m_current) + 1;
 
@@ -33,6 +37,7 @@ void MainWindow::dmanager_ready()
         DomainManager * dmanager = m_childs.value(m_current);
         this->connect(dmanager, SIGNAL(ready()), SLOT(dmanager_ready()));
         this->connect(dmanager, SIGNAL(checked(UrlInfo)), SLOT(dmanager_checked(UrlInfo)));
+        m_current->setBackgroundColor(QColor(Qt::yellow));
 
         dmanager->check(wmanager);
     }
@@ -67,6 +72,7 @@ void MainWindow::on_actionStart_triggered()
     {
         ui->actionStart->setEnabled(false);
         m_current = ui->domains->item(0);
+        m_current->setBackgroundColor(QColor(Qt::yellow));
 
         DomainManager * dmanager = m_childs.value(m_current);
         this->connect(dmanager, SIGNAL(ready()), SLOT(dmanager_ready()));
@@ -74,6 +80,18 @@ void MainWindow::on_actionStart_triggered()
 
         dmanager->check(wmanager);
         ui->actionStop->setEnabled(true);
+    }
+}
+
+
+void MainWindow::on_actionSkip_triggered()
+{
+    if (m_current != NULL)
+    {
+        DomainManager * dmanager = m_childs.value(m_current);
+        dmanager->abort();
+
+        dmanager_ready();
     }
 }
 
@@ -118,9 +136,13 @@ void MainWindow::on_actionAppend_triggered()
 
 void MainWindow::on_actionClear_triggered()
 {
-    foreach(DomainManager * manager, m_childs)
+    if (m_current != NULL)
+        on_actionStop_triggered();
+
+    QList<DomainManager *> dmanager = m_childs.values();
+    for(int i = 0; i < dmanager.size(); i++ )
     {
-        delete manager;
+        delete dmanager[i];
     }
     m_childs.clear();
     ui->domains->clear();
@@ -130,3 +152,4 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+

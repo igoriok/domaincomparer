@@ -113,6 +113,10 @@ void UrlInfo::clear()
 
 void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
 {
+    m_code = live.code();
+    m_type = live.type();
+    m_length = live.length();
+
     if (m_valid)
     {
         // comparation code
@@ -146,7 +150,7 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
                             if (live.length() == prev.length()) {
                                     m_state = UrlOk;
                             } else {
-                                    m_desc = QString("Different datasize: %1:%2").arg(live.type()).arg(prev.type());
+                                    m_desc = QString("Different datasize: %1:%2").arg(live.length()).arg(prev.length());
                                     m_state = UrlError;
                             }
                         }
@@ -165,9 +169,6 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
         }
     }
 
-    m_code = live.code();
-    m_type = live.type();
-    m_length = live.length();
     m_checked = true;
 }
 

@@ -51,6 +51,10 @@ void DomainInfo::setData(const QList<UrlInfo> & data, QString state, int total, 
     for (int i = 0; i < data.size(); i++)
     {
         const UrlInfo & result = data.at(i);
+
+        if (result.state() != UrlInfo::UrlOk)
+            m_different++;
+
         if (result.isChecked())
         {
             if (result.state() != UrlInfo::UrlOk)
@@ -62,7 +66,7 @@ void DomainInfo::setData(const QList<UrlInfo> & data, QString state, int total, 
                     addNewLine(result);
         }
     }
-    m_ui->tableWidget_urls->setSortingEnabled(false);
+    m_ui->tableWidget_urls->setSortingEnabled(true);
     updateView(total, m_cache.size());
 }
 
@@ -104,7 +108,7 @@ void DomainInfo::on_checkBox_ViewShowAll_toggled(bool checked)
                     addNewLine(result);
         }
     }
-    m_ui->tableWidget_urls->setSortingEnabled(false);
+    m_ui->tableWidget_urls->setSortingEnabled(true);
 }
 
 void DomainInfo::changeEvent(QEvent *e)

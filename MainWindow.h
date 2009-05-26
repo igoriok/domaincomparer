@@ -33,6 +33,7 @@ protected slots:
     void dmanager_checked(const UrlInfo & ui);
 
 private slots:
+    void on_actionSkip_triggered();
     void on_actionStart_triggered();
     void on_actionStop_triggered();
     void on_actionAppend_triggered();

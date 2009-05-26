@@ -162,6 +162,9 @@
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
      <column>
       <property name="text">
        <string>URL</string>
