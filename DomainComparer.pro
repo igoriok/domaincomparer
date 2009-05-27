@@ -22,3 +22,4 @@ HEADERS += MainWindow.h \
     DomainInfo.h
 FORMS += MainWindow.ui \
     AddRange.ui
+OTHER_FILES += db.s3db
