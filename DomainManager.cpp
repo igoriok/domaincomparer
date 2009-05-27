@@ -2,21 +2,12 @@
 #include <QRegExp>
 #include "DomainManager.h"
 
-DomainManager::DomainManager(const QString & domain, const QHostAddress & host, QObject * parent):
+DomainManager::DomainManager(QObject * parent):
         QObject(parent), m_depth_limit(0), m_count_limit(0), m_max_count_limit(0)
 {
-    m_domain = domain.toLower();
-    if (!m_domain.startsWith(QString("www.")))
-        m_domain.insert(0, QString("www."));
-
-    m_host = host;
-    QList<QHostAddress> add = QHostInfo::fromName(m_domain).addresses();
-    if (add.size() == 0)
-        m_state = LiveNotFound;
-    else if (add.at(0) == m_host)
-        m_state = LiveSwitched;
-    else
-        m_state = LiveOk;
+    this->manager = new WebManager(this);
+    this->connect(manager, SIGNAL(ready(WebResponse,WebResponse)), SLOT(on_manager_ready(WebResponse, WebResponse)));
+    m_busy = false;
 }
 
 DomainManager::DomainManager(const DomainManager & other):
@@ -38,6 +29,31 @@ DomainManager & DomainManager::operator =(const DomainManager & other)
 
     DomainManager(other.m_domain, other.m_host);
     return *this;
+}
+
+void DomainManager::init(const QString & domain, const QHostAddress & host)
+{
+    if (m_busy)
+    {
+        abort();
+        m_busy = false;
+    }
+
+    m_domain = domain.toLower();
+    if (!m_domain.startsWith(QString("www.")))
+        m_domain.insert(0, QString("www."));
+
+    m_host = host;
+    QList<QHostAddress> add = QHostInfo::fromName(m_domain).addresses();
+    if (add.size() == 0)
+        m_state = LiveNotFound;
+    else if (add.at(0) == m_host)
+        m_state = LiveSwitched;
+    else
+        m_state = LiveOk;
+
+    m_urls.clear();
+    m_check.clear();
 }
 
 int DomainManager::count(UrlInfo::UrlState state) const
@@ -76,22 +92,16 @@ void DomainManager::setLimit(int depth, int count, int max_count)
     if (max_count >= 0) m_max_count_limit = max_count;
 }
 
-void DomainManager::check(WebManager * manager)
+void DomainManager::check()
 {
-    if (manager != NULL)
+    if (!m_busy)
     {
-        this->manager = manager;
-        this->connect(manager, SIGNAL(ready(WebResponse,WebResponse)), SLOT(on_manager_ready(WebResponse, WebResponse)));
-
+        m_busy = true;
         m_urls.clear();
         m_check.clear();
         m_check.insert(UrlInfo(QUrl(QString("http://%1/").arg(m_domain)), QUrl()));
 
         checkNext();
-    }
-    else
-    {
-        emit ready();
     }
 }
 
@@ -109,18 +119,18 @@ void DomainManager::checkNext()
     {
         m_current.clear();
 
-        manager->disconnect(this);
-        manager = NULL;
-
+        m_busy = false;
         emit ready();
     }
 }
 
 void DomainManager::abort()
 {
-    manager->abort();
-    manager->disconnect(this);
-    manager = NULL;
+    if (m_busy)
+    {
+        manager->abort();
+        m_busy = false;
+    }
 
     m_current.clear();
 }
@@ -152,9 +162,11 @@ void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
             str = str.trimmed();
             str.remove(QRegExp("^[\\d]*;"));
 
-            if (!str.contains(QChar('\''))
-                && !str.contains(QChar('"'))
-                && !str.contains(QChar('[')))
+            if (!str.contains(QChar('\'')) &&
+                !str.contains(QChar('"')) &&
+                !str.contains(QChar('[')) &&
+                str != QString("\\") &&
+                str.size() > 0)
             {
                 QUrl url;
                 if (str.startsWith(QString("http://")))
@@ -167,7 +179,7 @@ void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
                 if (url.hasFragment()) url.setFragment(QString());
                 if (url.path().isEmpty()) url.setPath(QString("/"));
 
-                if (url.isValid() && compareHost(m_domain, url.host())) {
+                if (url.isValid() && WebManager::compareHost(m_domain, url.host())) {
                     url.setHost(m_domain);
                     UrlInfo ui(url, parent);
                     if (!m_check.contains(ui) && !m_urls.contains(ui))
@@ -187,17 +199,6 @@ QString & DomainManager::replaceSpec(QString & str)
     return str.replace(QString("&amp;"), QString("&"), Qt::CaseInsensitive)
             .replace(QString("&gt;"), QString(">"), Qt::CaseInsensitive)
             .replace(QString("&lt;"), QString("<"), Qt::CaseInsensitive);
-}
-
-bool DomainManager::compareHost(QString orig, QString comp)
-{
-    orig.toLower();
-    comp.toLower();
-    if (orig.startsWith(QString("www.")))
-        orig.remove(0, 4);
-    if (comp.startsWith(QString("www.")))
-        comp.remove(0, 4);
-    return (orig == comp);
 }
 
 void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse & prev)
@@ -224,15 +225,25 @@ void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse
         }
 
         int cnt = m_urls.size() + m_check.size();
-        bool ch = true;
 
-        if (!(m_max_count_limit != 0 && cnt >= m_max_count_limit) && // если не перевалило максимум
-            (!(m_count_limit != 0 && cnt >= m_count_limit) || // если не перевалило ограничение
-            ((m_count_limit != 0 && cnt >= m_count_limit) && depth <= m_depth_limit))) // или перевалило но глубина позволяет
+        if ((m_max_count_limit == 0 || cnt < m_max_count_limit) && // если не перевалило максимум
+            ((m_count_limit == 0) || (cnt < m_count_limit) || (cnt >= m_count_limit && depth <= m_depth_limit))) // или перевалило но глубина позволяет
         {
             QByteArray data(live.data());
             data.replace('\0', ' ');
             findNewUrls(m_current.url(), QString(data));
+        }
+    }
+
+    if ((live.code() / 100) == 3)
+    {
+        QUrl redirect(live.location());
+        if (WebManager::compareHost(m_domain, redirect.host()) || WebManager::compareHost(m_host.toString(), redirect.host()))
+        {
+            redirect.setHost(m_domain);
+            UrlInfo ui(redirect, m_current.parent());
+            if (!m_check.contains(ui) && !m_urls.contains(ui))
+                m_check.insert(ui);
         }
     }
 

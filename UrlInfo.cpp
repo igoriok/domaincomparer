@@ -133,8 +133,8 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
         }
         else
         {
-            if (prev.code() == live.code())	{
-                if ((live.code() / 100) == 2) {
+            if (prev.code() == live.code()) {
+                if ((m_code / 100) == 2) {
         //                if ((prev.getContentType().compare(live.getContentType()) == 0) || (prev.getContentSubType().compare(live.getContentSubType()) == 0)) {
                         if (m_type.startsWith(QString("text/"))) {
                             if (live.data() == prev.data())
@@ -161,8 +161,11 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
                     m_state = UrlOk;
                 }
             } else {
+                if ((m_code / 100) != 2)
+                    m_state = UrlWarning;
+                else
+                    m_state = UrlError;
                 m_desc = QString("Different code: %1:%2").arg(live.code()).arg(prev.code());
-                m_state = UrlError;
             }
         }
     }

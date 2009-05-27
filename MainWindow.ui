@@ -29,6 +29,7 @@
         </sizepolicy>
        </property>
       </widget>
+      <widget class="QTableView" name="tableView"/>
      </widget>
     </item>
    </layout>

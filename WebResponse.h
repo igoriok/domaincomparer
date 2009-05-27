@@ -7,10 +7,11 @@ class WebResponse
 {
 public:
     WebResponse();
-    WebResponse(const QString & type, int code, const QByteArray & data, qlonglong length);
+    WebResponse(int code, const QString & type, const QUrl & location, const QByteArray & data, qlonglong length);
 
-    const QString & type() const { return m_type; }
     int code() const { return m_code; }
+    const QString & type() const { return m_type; }
+    const QUrl & location() const { return m_location; }
     const QByteArray & data() const { return m_data; }
     qlonglong length() const { return m_length; }
 
@@ -18,8 +19,9 @@ public:
     void clear();
 
 private:
-    QString m_type;
     int m_code;
+    QString m_type;
+    QUrl m_location;
     QByteArray m_data;
     qlonglong m_length;
 

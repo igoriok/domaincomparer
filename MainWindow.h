@@ -3,6 +3,7 @@
 
 #include <QtGui/QMainWindow>
 #include <QListWidgetItem>
+#include "DatabaseManager.h"
 #include "DomainManager.h"
 
 namespace Ui
@@ -18,12 +19,11 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    WebManager * wmanager;
-
 private:
     Ui::MainWindowClass *ui;
 
-    QHash<QListWidgetItem *, DomainManager *> m_childs;
+    DatabaseManager * m_dbmanager;
+    DomainManager * m_dmanager;
     QListWidgetItem * m_current;
     bool isBatch;
 

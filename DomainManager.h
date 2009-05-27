@@ -11,7 +11,7 @@ class DomainManager : public QObject
 
 public:
     // Конструкторы
-    DomainManager(const QString & domain, const QHostAddress & host, QObject * parent = NULL);
+    DomainManager(QObject * parent = NULL);
     DomainManager(const DomainManager & other);
     DomainManager & operator =(const DomainManager & other);
 
@@ -22,6 +22,8 @@ public:
         LiveNotFound,
         LiveSwitched
     };
+
+    void init(const QString & domain, const QHostAddress & host);
 
     // Геттеры
     const QString & domain() const { return m_domain; }
@@ -39,7 +41,7 @@ public:
 
 public slots:
     // Внешние слоты
-    void check(WebManager * manager);
+    void check();
     void abort();
 
 signals:
@@ -65,12 +67,12 @@ private:
     // Переменные проверки
     UrlInfo m_current;
     WebManager * manager;
+    bool m_busy;
 
     // Вспомогательные функции
     void checkNext();
     void findNewUrls(const QUrl & parent, const QString & html);
     QString & replaceSpec(QString & str);
-    bool compareHost(QString orig, QString comp);
 
 protected slots:
     // Внутренние слоты

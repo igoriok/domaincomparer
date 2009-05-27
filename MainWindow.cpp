@@ -6,8 +6,10 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass)
 {
-    wmanager = new WebManager(this);
-    wmanager->setObjectName("wmanager");
+    m_dbmanager = new DatabaseManager(this);
+    m_dbmanager->open();
+
+    m_dmanager = new DomainManager(this);
 
     ui->setupUi(this);
 
@@ -21,8 +23,8 @@ void MainWindow::on_wmanager_sending(const QString & method, const QUrl & url)
 
 void MainWindow::dmanager_ready()
 {
-    DomainManager * dmanager = m_childs.value(m_current);
-    dmanager->disconnect(this);
+    m_dbmanager->insertDomainResult(dmanager->domain(), dmanager->result());
+
     if(dmanager->count(UrlInfo::UrlError) > 0)
         m_current->setBackgroundColor(QColor(Qt::red));
     else
@@ -52,7 +54,7 @@ void MainWindow::dmanager_checked(const UrlInfo & ui)
 {
     if (m_current == this->ui->domains->currentItem())
     {
-        this->ui->domainInfo->updateData(ui, m_childs.value(m_current)->total());
+        //this->ui->domainInfo->updateData(ui, m_childs.value(m_current)->total());
     }
 }
 
@@ -61,9 +63,21 @@ void MainWindow::on_domains_itemSelectionChanged()
     QListWidgetItem * item = ui->domains->currentItem();
     if (item != NULL)
     {
-        DomainManager * dmanager = m_childs.value(item);
-        ui->domainInfo->setData(dmanager->result().toList(), dmanager->stateString(), dmanager->total());
+        if (m_childs.contains(item))
+        {
+            DomainManager * dmanager = m_childs.value(item);
+            //ui->domainInfo->setData(dmanager->result().toList(), dmanager->stateString(), dmanager->total());
+
+            QAbstractItemModel * mode = ui->tableView->model();
+            ui->tableView->setModel(m_db->getDomainModel(dmanager->domain()));
+            if (mode != NULL)
+                delete mode;
+        }
+        else
+            ui->domainInfo->clearData();
     }
+    else
+        ui->domainInfo->clearData();
 }
 
 void MainWindow::on_actionStart_triggered()
@@ -126,6 +140,8 @@ void MainWindow::on_actionAppend_triggered()
                 DomainManager * dmanageer = new DomainManager(domain, QHostAddress(host), this);
                 dmanageer->setLimit(3, 300, 1000);
                 m_childs.insert(item, dmanageer);
+
+                m_db->insertDomain(dmanageer->domain(), dmanageer->state());
             }
         }
         else
@@ -141,8 +157,13 @@ void MainWindow::on_actionClear_triggered()
         on_actionStop_triggered();
 
     while(m_childs.size() > 0)
-        delete m_childs.take(m_childs.constBegin().key());
+    {
+        DomainManager * dmanager = m_childs.take(m_childs.constBegin().key());
+        delete dmanager;
+    }
+
     ui->domains->clear();
+    ui->domainInfo->clearData();
 }
 
 MainWindow::~MainWindow()
