@@ -17,9 +17,7 @@ DomainManager::DomainManager(const DomainManager & other):
     m_count_limit = other.m_count_limit;
     m_max_count_limit = other.m_max_count_limit;
 
-    m_domain = other.m_domain;
-    m_host = other.m_host;
-    m_state = other.m_state;
+    m_domainInfo = other.m_domainInfo;
 }
 
 DomainManager & DomainManager::operator =(const DomainManager & other)
@@ -27,11 +25,11 @@ DomainManager & DomainManager::operator =(const DomainManager & other)
     m_check.clear();
     m_urls.clear();
 
-    DomainManager(other.m_domain, other.m_host);
+    init(other.m_domainInfo);
     return *this;
 }
 
-void DomainManager::init(const QString & domain, const QHostAddress & host)
+void DomainManager::init(const DomainInfo & domain)
 {
     if (m_busy)
     {
@@ -39,21 +37,18 @@ void DomainManager::init(const QString & domain, const QHostAddress & host)
         m_busy = false;
     }
 
-    m_domain = domain.toLower();
-    if (!m_domain.startsWith(QString("www.")))
-        m_domain.insert(0, QString("www."));
+    m_domainInfo = domain;
 
-    m_host = host;
-    QList<QHostAddress> add = QHostInfo::fromName(m_domain).addresses();
+    QList<QHostAddress> add = QHostInfo::fromName(m_domainInfo.domain()).addresses();
     if (add.size() == 0)
-        m_state = LiveNotFound;
-    else if (add.at(0) == m_host)
-        m_state = LiveSwitched;
+        m_domainInfo.setState(DomainInfo::DomainNotFound);
+    else if (add.at(0).toString() == m_domainInfo.host())
+        m_domainInfo.setState(DomainInfo::DomainSwitched);
     else
-        m_state = LiveOk;
+        m_domainInfo.setState(DomainInfo::DomainOk);
 
-    m_urls.clear();
     m_check.clear();
+    m_urls.clear();
 }
 
 int DomainManager::count(UrlInfo::UrlState state) const
@@ -65,24 +60,6 @@ int DomainManager::count(UrlInfo::UrlState state) const
             count++;
     }
     return count;
-}
-
-QString DomainManager::stateString() const
-{
-    QString str;
-    switch(m_state)
-    {
-        case LiveOk:
-            str.append("OK");
-            break;
-        case LiveNotFound:
-            str.append("NOT FOUND");
-            break;
-        case LiveSwitched:
-            str.append("SWITCHED");
-            break;
-    }
-    return str;
 }
 
 void DomainManager::setLimit(int depth, int count, int max_count)
@@ -99,7 +76,7 @@ void DomainManager::check()
         m_busy = true;
         m_urls.clear();
         m_check.clear();
-        m_check.insert(UrlInfo(QUrl(QString("http://%1/").arg(m_domain)), QUrl()));
+        m_check.insert(UrlInfo(QUrl(QString("http://%1/").arg(m_domainInfo.domain())), QUrl()));
 
         checkNext();
     }
@@ -113,13 +90,13 @@ void DomainManager::checkNext()
         m_current = (*iter);
         m_check.erase(iter);
 
-        manager->get(m_current.url(), m_host);
+        manager->get(m_current.url(), QHostAddress(m_domainInfo.host()));
     }
     else
     {
         m_current.clear();
-
         m_busy = false;
+
         emit ready();
     }
 }
@@ -179,8 +156,8 @@ void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
                 if (url.hasFragment()) url.setFragment(QString());
                 if (url.path().isEmpty()) url.setPath(QString("/"));
 
-                if (url.isValid() && WebManager::compareHost(m_domain, url.host())) {
-                    url.setHost(m_domain);
+                if (url.isValid() && WebManager::compareHost(m_domainInfo.domain(), url.host())) {
+                    url.setHost(m_domainInfo.domain());
                     UrlInfo ui(url, parent);
                     if (!m_check.contains(ui) && !m_urls.contains(ui))
                         m_check.insert(ui);
@@ -238,9 +215,9 @@ void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse
     if ((live.code() / 100) == 3)
     {
         QUrl redirect(live.location());
-        if (WebManager::compareHost(m_domain, redirect.host()) || WebManager::compareHost(m_host.toString(), redirect.host()))
+        if (WebManager::compareHost(m_domainInfo.domain(), redirect.host()) || WebManager::compareHost(m_domainInfo.host(), redirect.host()))
         {
-            redirect.setHost(m_domain);
+            redirect.setHost(m_domainInfo.domain());
             UrlInfo ui(redirect, m_current.parent());
             if (!m_check.contains(ui) && !m_urls.contains(ui))
                 m_check.insert(ui);

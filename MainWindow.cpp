@@ -6,120 +6,69 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass)
 {
-    m_dbmanager = new DatabaseManager(this);
-    m_dbmanager->open();
+    m_db = new DatabaseManager(this);
+    m_db->open();
 
-    m_dmanager = new DomainManager(this);
+    dmanager = new DomainManager(this);
+    dmanager->setObjectName("dmanager");
 
     ui->setupUi(this);
 
-    m_current = NULL;
+    QAbstractItemModel * oldModel = ui->listView->model();
+    ui->listView->setModel(m_db->getDomainsModel());
+    delete oldModel;
 }
 
-void MainWindow::on_wmanager_sending(const QString & method, const QUrl & url)
+void MainWindow::updateListModel(QAbstractItemModel * model)
 {
-    ui->statusBar->showMessage(QString("%1 %2").arg(method).arg(url.toString()));
+    QAbstractItemModel * oldModel = ui->listView->model();
+    ui->listView->setModel(model);
+    delete oldModel;
 }
 
-void MainWindow::dmanager_ready()
+void MainWindow::updateTableModel(QAbstractItemModel * model)
 {
-    m_dbmanager->insertDomainResult(dmanager->domain(), dmanager->result());
+    QAbstractItemModel * oldModel = ui->tableView->model();
+    ui->tableView->setModel(model);
+    delete oldModel;
+}
 
-    if(dmanager->count(UrlInfo::UrlError) > 0)
-        m_current->setBackgroundColor(QColor(Qt::red));
-    else
-        m_current->setBackgroundColor(QColor(Qt::green));
+void MainWindow::on_dmanager_ready()
+{
+    m_db->insertDomain(dmanager->domainInfo());
+    m_db->insertDomainResult(dmanager->domainInfo().domain(), dmanager->result());
 
-    int index = ui->domains->row(m_current) + 1;
+    m_index = ui->listView->model()->index(m_index.row() + 1, 0);
 
-    if (index < ui->domains->count())
+    if (m_index.isValid())
     {
-        m_current = ui->domains->item(index);
-
-        DomainManager * dmanager = m_childs.value(m_current);
-        this->connect(dmanager, SIGNAL(ready()), SLOT(dmanager_ready()));
-        this->connect(dmanager, SIGNAL(checked(UrlInfo)), SLOT(dmanager_checked(UrlInfo)));
-        m_current->setBackgroundColor(QColor(Qt::yellow));
-
-        dmanager->check(wmanager);
-    }
-    else
-    {
-        m_current = NULL;
-        ui->actionStart->setEnabled(true);
+        dmanager->init(m_db->getDomainInfo(ui->listView->model()->data(m_index).toString()));
+        dmanager->check();
     }
 }
 
-void MainWindow::dmanager_checked(const UrlInfo & ui)
+void MainWindow::on_dmanager_checked(const UrlInfo & ui)
 {
-    if (m_current == this->ui->domains->currentItem())
-    {
-        //this->ui->domainInfo->updateData(ui, m_childs.value(m_current)->total());
-    }
-}
-
-void MainWindow::on_domains_itemSelectionChanged()
-{
-    QListWidgetItem * item = ui->domains->currentItem();
-    if (item != NULL)
-    {
-        if (m_childs.contains(item))
-        {
-            DomainManager * dmanager = m_childs.value(item);
-            //ui->domainInfo->setData(dmanager->result().toList(), dmanager->stateString(), dmanager->total());
-
-            QAbstractItemModel * mode = ui->tableView->model();
-            ui->tableView->setModel(m_db->getDomainModel(dmanager->domain()));
-            if (mode != NULL)
-                delete mode;
-        }
-        else
-            ui->domainInfo->clearData();
-    }
-    else
-        ui->domainInfo->clearData();
+    this->ui->statusBar->showMessage(ui.url().toString());
 }
 
 void MainWindow::on_actionStart_triggered()
 {
-    if (m_childs.size() > 0)
+    m_index = ui->listView->model()->index(0, 0);
+    if (m_index.isValid())
     {
-        ui->actionStart->setEnabled(false);
-        m_current = ui->domains->item(0);
-        m_current->setBackgroundColor(QColor(Qt::yellow));
-
-        DomainManager * dmanager = m_childs.value(m_current);
-        this->connect(dmanager, SIGNAL(ready()), SLOT(dmanager_ready()));
-        this->connect(dmanager, SIGNAL(checked(UrlInfo)), SLOT(dmanager_checked(UrlInfo)));
-
-        dmanager->check(wmanager);
-        ui->actionStop->setEnabled(true);
+        dmanager->init(m_db->getDomainInfo(ui->listView->model()->data(m_index).toString()));
+        dmanager->check();
     }
 }
 
-
 void MainWindow::on_actionSkip_triggered()
 {
-    if (m_current != NULL)
-    {
-        DomainManager * dmanager = m_childs.value(m_current);
-        dmanager->abort();
-
-        dmanager_ready();
-    }
 }
 
 void MainWindow::on_actionStop_triggered()
 {
-    if (m_current != NULL)
-    {
-        DomainManager * dmanager = m_childs.value(m_current);
-        dmanager->abort();
-        dmanager->disconnect(this);
-
-        m_current = NULL;
-        ui->actionStart->setEnabled(true);
-    }
+    dmanager->abort();
 }
 
 void MainWindow::on_actionAppend_triggered()
@@ -135,14 +84,9 @@ void MainWindow::on_actionAppend_triggered()
             QStringList list(dui.plainTextEdit->toPlainText().split(QChar('\n'), QString::SkipEmptyParts));
             foreach(const QString & domain, list)
             {
-                QListWidgetItem * item = new QListWidgetItem(domain);
-                ui->domains->addItem(item);
-                DomainManager * dmanageer = new DomainManager(domain, QHostAddress(host), this);
-                dmanageer->setLimit(3, 300, 1000);
-                m_childs.insert(item, dmanageer);
-
-                m_db->insertDomain(dmanageer->domain(), dmanageer->state());
+                m_db->insertDomain(DomainInfo(domain, dui.lineEdit->text().trimmed()));
             }
+            updateListModel(m_db->getDomainsModel());
         }
         else
         {
@@ -153,17 +97,6 @@ void MainWindow::on_actionAppend_triggered()
 
 void MainWindow::on_actionClear_triggered()
 {
-    if (m_current != NULL)
-        on_actionStop_triggered();
-
-    while(m_childs.size() > 0)
-    {
-        DomainManager * dmanager = m_childs.take(m_childs.constBegin().key());
-        delete dmanager;
-    }
-
-    ui->domains->clear();
-    ui->domainInfo->clearData();
 }
 
 MainWindow::~MainWindow()
@@ -171,3 +104,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::on_listView_clicked(QModelIndex index)
+{
+    if (index.isValid())
+    {
+        QAbstractItemModel * model = ui->listView->model();
+        QString domain(model->data(index).toString());
+        updateTableModel(m_db->getLinksModel(domain));
+        ui->tableView->sortByColumn(1, Qt::DescendingOrder);
+    }
+}

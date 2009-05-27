@@ -20,16 +20,18 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QListWidget" name="domains"/>
-      <widget class="DomainInfo" name="domainInfo" native="true">
+      <widget class="QListView" name="listView"/>
+      <widget class="QTableView" name="tableView">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
+       </property>
       </widget>
-      <widget class="QTableView" name="tableView"/>
      </widget>
     </item>
    </layout>
@@ -40,7 +42,7 @@
      <x>0</x>
      <y>0</y>
      <width>774</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuAction">
@@ -96,14 +98,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>DomainInfo</class>
-   <extends>QWidget</extends>
-   <header>DomainInfo.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

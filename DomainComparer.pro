@@ -1,7 +1,8 @@
 # -------------------------------------------------
 # Project created by QtCreator 2009-05-20T14:18:52
 # -------------------------------------------------
-QT += network sql
+QT += network \
+    sql
 TARGET = DomainComparer
 TEMPLATE = app
 SOURCES += main.cpp \
@@ -10,15 +11,14 @@ SOURCES += main.cpp \
     WebResponse.cpp \
     DomainManager.cpp \
     UrlInfo.cpp \
-    DomainInfo.cpp \
-    DatabaseManager.cpp
+    DatabaseManager.cpp \
+    DomainInfo.cpp
 HEADERS += MainWindow.h \
     WebManager.h \
     WebResponse.h \
     DomainManager.h \
     UrlInfo.h \
-    DomainInfo.h \
-    DatabaseManager.h
+    DatabaseManager.h \
+    DomainInfo.h
 FORMS += MainWindow.ui \
-    DomainInfo.ui \
     AddRange.ui

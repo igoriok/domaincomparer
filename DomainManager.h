@@ -4,6 +4,7 @@
 #include <QHostAddress>
 #include "UrlInfo.h"
 #include "WebManager.h"
+#include "DomainInfo.h"
 
 class DomainManager : public QObject
 {
@@ -15,26 +16,15 @@ public:
     DomainManager(const DomainManager & other);
     DomainManager & operator =(const DomainManager & other);
 
-    // Состояние DNS
-    enum LiveState
-    {
-        LiveOk,
-        LiveNotFound,
-        LiveSwitched
-    };
-
-    void init(const QString & domain, const QHostAddress & host);
+    void init(const DomainInfo & domain);
 
     // Геттеры
-    const QString & domain() const { return m_domain; }
-    QString host() const { return m_host.toString(); }
+    const DomainInfo & domainInfo() const { return m_domainInfo; }
     const QSet<UrlInfo> & result() const { return m_urls; }
     const QUrl & current() const { return m_current.url(); }
     int total() const { return m_check.size() + m_urls.size(); }
     int count() const { return m_urls.size(); }
     int count(UrlInfo::UrlState state) const;
-    LiveState state() const { return m_state; }
-    QString stateString() const;
 
     // Setters
     void setLimit(int depth = 0, int count = 0, int max_count = 0);
@@ -51,9 +41,7 @@ signals:
 
 private:
     // Базовая информация
-    QString m_domain;
-    QHostAddress m_host;
-    LiveState m_state;
+    DomainInfo m_domainInfo;
 
     // Ограничения
     int m_depth_limit;

@@ -8,6 +8,8 @@ WebManager::WebManager(QObject * parent):
     manager = new QNetworkAccessManager(this);
     this->connect(manager, SIGNAL(finished(QNetworkReply*)), SLOT(on_manager_finished(QNetworkReply*)));
 
+    manager->setCookieJar(NULL);
+
     live = NULL;
     prev = NULL;
     _timer = 0;
@@ -68,11 +70,13 @@ void WebManager::abort()
     if (live != NULL)
     {
         live->abort();
+        delete live;
         live = NULL;
     }
     if (prev != NULL)
     {
         prev->abort();
+        delete prev;
         prev = NULL;
     }
 
@@ -101,6 +105,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
         _temp.clear();
+        delete reply;
     }
     else
     {
@@ -130,6 +135,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
             length = data.length();
 
         WebResponse current(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), type.split(QChar(';')).at(0), redirect, data, length);
+        delete reply;
 
         if (((current.code() / 100) == 3) && compareHost(_domain, current.location().host()))
         {
@@ -172,4 +178,5 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
 
 WebManager::~WebManager()
 {
+    abort();
 }
