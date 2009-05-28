@@ -1,37 +1,40 @@
 #ifndef DOMAININFO_H
 #define DOMAININFO_H
 
-#include <QtGui/QWidget>
-#include "DomainManager.h"
+#include <QString>
 
-namespace Ui {
-    class DomainInfoWidget;
-}
-
-class DomainInfo : public QWidget {
-    Q_OBJECT
-    Q_DISABLE_COPY(DomainInfo)
+class DomainInfo
+{
 public:
-    explicit DomainInfo(QWidget *parent = 0);
-    virtual ~DomainInfo();
+    enum DomainState
+    {
+        DomainNotChecked,
+        DomainNotFound,
+        DomainSwitched,
+        DomainOk
+    };
 
-    void setData(const QList<UrlInfo> & data, QString state, int total);
-    void updateData(const UrlInfo & data, int total);
-    void clearData();
+    DomainInfo();
+    DomainInfo(const QString & domain, const QString & host, DomainState state = DomainNotChecked);
 
-protected:
-    virtual void changeEvent(QEvent *e);
+    const QString & domain() const { return m_domain; }
+    const QString & host() const { return m_host; }
+    DomainState state() const { return m_state; }
+    bool isNull() const { return m_null; }
+
+    void setInfo(const QString & domain, const QString & host, DomainState state = DomainNotChecked);
+    void setState(DomainState state);
+
+    void clear();
+
+    static QString stateString(DomainState state);
 
 private:
-    Ui::DomainInfoWidget *m_ui;
-    QHash<UrlInfo::UrlState, UrlInfo> m_cache;
+    QString m_domain;
+    QString m_host;
+    DomainState m_state;
 
-    void addNewLine(const UrlInfo & data);
-    void updateView(int total, int checked);
-
-private slots:
-    void on_checkBox_ViewShowAll_stateChanged(int );
-    void on_checkBox_ViewShowAll_toggled(bool checked);
+    bool m_null;
 };
 
 #endif // DOMAININFO_H
