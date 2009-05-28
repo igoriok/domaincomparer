@@ -158,7 +158,7 @@ void UrlInfo::compare(const WebResponse & live, const WebResponse & prev)
         //                }
                 } else {
                     m_desc = QString("Both code: %1").arg(live.code());
-                    m_state = UrlOk;
+                    m_state = UrlWarning;
                 }
             } else {
                 if ((m_code / 100) != 2)

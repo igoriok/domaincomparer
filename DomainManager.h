@@ -36,6 +36,7 @@ public slots:
 
 signals:
     // Сигналы
+    void checking(const QUrl & url, int total, int checked);
     void checked(const UrlInfo & ui);
     void ready();
 

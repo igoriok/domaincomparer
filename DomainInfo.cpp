@@ -5,9 +5,9 @@ DomainInfo::DomainInfo():
 {
 }
 
-DomainInfo::DomainInfo(const QString & domain, const QString & host, DomainState state):
-        m_domain(domain), m_host(host), m_state(state), m_null(false)
+DomainInfo::DomainInfo(const QString & domain, const QString & host, DomainState state)
 {
+    setInfo(domain, host);
 }
 
 void DomainInfo::setInfo(const QString & domain, const QString & host, DomainState state)
@@ -33,6 +33,11 @@ void DomainInfo::clear()
     m_host.clear();
     m_state = DomainNotChecked;
     m_null = true;
+}
+
+QString DomainInfo::stateString() const
+{
+    return stateString(m_state);
 }
 
 QString DomainInfo::stateString(DomainInfo::DomainState state)

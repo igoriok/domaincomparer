@@ -1,0 +1,12 @@
+1. Получение ссылок     + / testing
+2. Сравнение            + / testings
+3. Получение ошибок     + / testings
+4. Поиск по базе        -
+5. Объединение ошибок   -
+
+База ошибок:
+
+id
+type        asp, asp.net, php, fp
+subtype     db, runtime, script
+match       math1|match2|match3

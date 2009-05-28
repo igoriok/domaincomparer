@@ -27,6 +27,7 @@ public:
 
     void clear();
 
+    QString stateString() const;
     static QString stateString(DomainState state);
 
 private:

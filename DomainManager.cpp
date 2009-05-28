@@ -90,6 +90,7 @@ void DomainManager::checkNext()
         m_current = (*iter);
         m_check.erase(iter);
 
+        emit checking(m_current.url(), m_check.size() + m_urls.size(), m_urls.size());
         manager->get(m_current.url(), QHostAddress(m_domainInfo.host()));
     }
     else
@@ -160,7 +161,11 @@ void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
                     url.setHost(m_domainInfo.domain());
                     UrlInfo ui(url, parent);
                     if (!m_check.contains(ui) && !m_urls.contains(ui))
+                    {
                         m_check.insert(ui);
+                        if (m_max_count_limit == (m_check.size() + m_urls.size() + 1))
+                            break;
+                    }
                 } else {
                     //qDebug(QString("SKIP %1").arg(url.toString()).toAscii());
                 }

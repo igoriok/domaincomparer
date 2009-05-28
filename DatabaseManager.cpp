@@ -53,8 +53,9 @@ void DatabaseManager::insertDomain(const DomainInfo & domainInfo)
     }
     else
     {
-        q.prepare("UPDATE domain SET state = :state");
+        q.prepare("UPDATE domains SET state = :state WHERE name = :name");
         q.bindValue(":state", (int)domainInfo.state());
+        q.bindValue(":name", domain);
         q.exec();
         q.finish();
     }
@@ -85,6 +86,18 @@ void DatabaseManager::insertDomainResult(const QString & domain, const QSet<UrlI
     }
 }
 
+void DatabaseManager::clearDomains()
+{
+    clearResults();
+    m_db.exec("DELETE FROM domains");
+    m_cache.clear();
+}
+
+void DatabaseManager::clearResults()
+{
+    m_db.exec("DELETE FROM links");
+}
+
 DomainInfo DatabaseManager::getDomainInfo(const QString & domain)
 {
     DomainInfo domainInfo;
@@ -106,43 +119,45 @@ DomainInfo DatabaseManager::getDomainInfo(const QString & domain)
 QMap<UrlInfo::UrlState, int> DatabaseManager::getDomainStatistic(const QString & domain)
 {
     QMap<UrlInfo::UrlState, int> map;
-    QSqlQuery q1(QString("SELECT DISTINCT id FROM domains WHERE name = '%1'").arg(domain), m_db);
-    if (q1.first())
+    if (m_cache.contains(domain))
     {
-        QSqlQuery q(QString("SELECT state, COUNT(*) FROM urls WHERE domain = %1 GROUP BY (state)").arg(q1.value(0).toInt()), m_db);
+        QSqlQuery q(QString("SELECT state, COUNT(*) FROM links WHERE domain = %1 GROUP BY (state)").arg(m_cache.value(domain)), m_db);
         while (q.next())
             map.insert((UrlInfo::UrlState)q.value(0).toInt(), q.value(1).toInt());
         q.finish();
     }
-    q1.finish();
     return map;
 }
 
 QAbstractItemModel * DatabaseManager::getDomainsModel()
 {
-    QSqlTableModel * model = new QSqlTableModel(NULL, m_db);
-    model->setTable("domains_view");
+    QSqlQueryModel * model = new QSqlQueryModel();
+    model->setQuery("SELECT name FROM domains ORDER BY name ASC", m_db);
     return model;
+
 }
 
-QAbstractItemModel * DatabaseManager::getLinksModel(const QString & domain)
+QAbstractItemModel * DatabaseManager::getLinksModel(const QString & domain, UrlInfo::UrlState state)
 {
-    /*
-    QSqlQueryModel * model = new QSqlQueryModel();
-    QSqlQuery q(m_db);
-    q.prepare("SELECT DISTINCT id FROM domains WHERE name = :name");
-    q.bindValue(":name", domain);
-    q.exec();
-    if (q.first())
-        model->setQuery(QString("SELECT l.url as URL, s.text as STATE FROM links as l LEFT JOIN lstates as s ON l.state = s.id WHERE l.domain = %1").arg(q.value(0).toInt()), m_db);
-    else
-        qDebug("Links model error");
-    q.finish();
-    return model;
-    */
     QSqlTableModel * model = new QSqlTableModel(NULL, m_db);
     model->setTable("links_view");
-    model->setFilter(QString("DOMAIN = '%1'").arg(domain));
+    switch (state)
+    {
+        case UrlInfo::UrlOk:
+            model->setFilter(QString("DOMAIN = '%1' AND STATE = 'OK'").arg(domain));
+            break;
+        case UrlInfo::UrlWarning:
+            model->setFilter(QString("DOMAIN = '%1' AND STATE = 'WARNING'").arg(domain));
+            break;
+        case UrlInfo::UrlError:
+            model->setFilter(QString("DOMAIN = '%1' AND STATE = 'ERROR'").arg(domain));
+            break;
+        case UrlInfo::UrlNotChecked:
+            model->setFilter(QString("DOMAIN = '%1'").arg(domain));
+            break;
+    }
+    model->setSort(0, Qt::AscendingOrder);
+    model->select();
     model->removeColumn(0);
     return model;
 }

@@ -105,7 +105,6 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
         _temp.clear();
-        delete reply;
     }
     else
     {
@@ -135,7 +134,6 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
             length = data.length();
 
         WebResponse current(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), type.split(QChar(';')).at(0), redirect, data, length);
-        delete reply;
 
         if (((current.code() / 100) == 3) && compareHost(_domain, current.location().host()))
         {
@@ -174,6 +172,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
             }
         }
     }
+    reply->deleteLater();
 }
 
 WebManager::~WebManager()

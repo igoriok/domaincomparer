@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QtGui/QMainWindow>
-#include <QListWidgetItem>
+#include <QLabel>
 #include "DatabaseManager.h"
 #include "DomainManager.h"
 
@@ -25,18 +25,24 @@ private:
     DatabaseManager * m_db;
     DomainManager * dmanager;
     QModelIndex m_index;
-    bool isBatch;
+
+    QLabel * current_domain;
+    QLabel * current_checked;
+    QLabel * current_total;
 
 protected:
     void updateListModel(QAbstractItemModel * model);
     void updateTableModel(QAbstractItemModel * model);
+    void updateDomainInfo(const DomainInfo & domainInfo);
 
 protected slots:
+    void on_dmanager_checking(const QUrl & url, int total, int checked);
     void on_dmanager_ready();
     void on_dmanager_checked(const UrlInfo & ui);
 
 private slots:
-    void on_listView_clicked(QModelIndex index);
+    void on_comboBox_currentIndexChanged(int index);
+    void on_listView_Domains_clicked(QModelIndex index);
     void on_actionSkip_triggered();
     void on_actionStart_triggered();
     void on_actionStop_triggered();
