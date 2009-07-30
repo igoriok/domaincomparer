@@ -116,7 +116,7 @@ void DomainManager::abort()
 void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
 {
     int pos = 0;
-    QRegExp reg("(?:meta|href|src|background|action)[\\s]*=(?:[\\s]*(?:\"[^\"]+\"|'[^']+')|[^'\"\\s>]*)", Qt::CaseInsensitive);
+    QRegExp reg("(?:href|src|background|action)[\\s]*=(?:[\\s]*(?:\"[^\"]+\"|'[^']+')|[^'\"\\s>]*)", Qt::CaseInsensitive);
 
     while ((pos = reg.indexIn(html, pos)) != -1)
     {
@@ -138,7 +138,7 @@ void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
             replaceSpec(str);
             str = QUrl::fromPercentEncoding(str.toAscii());
             str = str.trimmed();
-            str.remove(QRegExp("^[\\d]*;"));
+            //str.remove(QRegExp("^[\\d]*;(URL=)?", Qt::CaseInsensitive));
 
             if (!str.contains(QChar('\'')) &&
                 !str.contains(QChar('"')) &&

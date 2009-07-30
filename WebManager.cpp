@@ -70,13 +70,13 @@ void WebManager::abort()
     if (live != NULL)
     {
         live->abort();
-        delete live;
+        live->deleteLater();
         live = NULL;
     }
     if (prev != NULL)
     {
         prev->abort();
-        delete prev;
+        prev->deleteLater();
         prev = NULL;
     }
 
@@ -101,6 +101,8 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
     bool isLive = (reply == live) ? true : false;
     if (reply == live) live = NULL;
     else if (reply == prev) prev = NULL;
+
+    qDebug(QByteArray("Finished ").append(reply->url().toString()));
 
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
@@ -135,10 +137,11 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
 
         WebResponse current(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), type.split(QChar(';')).at(0), redirect, data, length);
 
-        if (((current.code() / 100) == 3) && compareHost(_domain, current.location().host()))
+        if (((current.code() / 100) == 3) && compareHost(_domain, current.location().host()) && request.url().scheme() == current.location().scheme())
         {
             QUrl url(request.url());
             url.setPath(current.location().path());
+            url.setQueryItems(current.location().queryItems());
             request.setUrl(url);
             if (_ext.contains(url.path().right(4).toLower()))
             {

@@ -76,7 +76,10 @@ void MainWindow::on_dmanager_ready()
         dmanager->check();
     }
     else
+    {
         updateListModel(m_db->getDomainsModel());
+        ui->actionStart->setEnabled(true);
+    }
 }
 
 void MainWindow::on_dmanager_checked(const UrlInfo & ui)
@@ -89,6 +92,7 @@ void MainWindow::on_actionStart_triggered()
     m_index = ui->listView_Domains->model()->index(0, 0);
     if (m_index.isValid())
     {
+        ui->actionStart->setEnabled(false);
         dmanager->init(m_db->getDomainInfo(ui->listView_Domains->model()->data(m_index).toString()));
         dmanager->check();
     }
