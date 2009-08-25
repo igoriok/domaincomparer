@@ -1,6 +1,7 @@
 #include <QHostInfo>
 #include <QRegExp>
 #include "DomainManager.h"
+#include "DomainHelper.h"
 
 DomainManager::DomainManager(QObject * parent):
         QObject(parent), m_depth_limit(0), m_count_limit(0), m_max_count_limit(0)
@@ -82,6 +83,12 @@ void DomainManager::check()
     }
 }
 
+void DomainManager::check(const DomainInfo & domainInfo)
+{
+    init(domainInfo);
+    check();
+}
+
 void DomainManager::checkNext()
 {
     if (!m_check.isEmpty())
@@ -90,7 +97,7 @@ void DomainManager::checkNext()
         m_current = (*iter);
         m_check.erase(iter);
 
-        emit checking(m_current.url(), m_check.size() + m_urls.size(), m_urls.size());
+        emit checking();
         manager->get(m_current.url(), QHostAddress(m_domainInfo.host()));
     }
     else
@@ -108,79 +115,24 @@ void DomainManager::abort()
     {
         manager->abort();
         m_busy = false;
-    }
 
-    m_current.clear();
+        m_current.clear();
+    }
 }
 
 void DomainManager::findNewUrls(const QUrl & parent, const QString & html)
 {
-    int pos = 0;
-    QRegExp reg("(?:href|src|background|action)[\\s]*=(?:[\\s]*(?:\"[^\"]+\"|'[^']+')|[^'\"\\s>]*)", Qt::CaseInsensitive);
+    QList<UrlInfo> list(DomainHelper::findNewUrls(parent, html));
 
-    while ((pos = reg.indexIn(html, pos)) != -1)
+    foreach (const UrlInfo & ui, list)
     {
-        QString str(reg.cap(0));
-        //qDebug(QString("FINDED %1").arg(str).toAscii());
-
-        if (str.endsWith('"')) {
-            int pos = str.indexOf('"') + 1;
-            str = str.mid(pos, str.size() - pos - 1);
-        } else if (str.endsWith('\'')) {
-            int pos = str.indexOf('\'') + 1;
-            str = str.mid(pos, str.size() - pos - 1);
-        } else if (str.indexOf('=') != -1) {
-            int pos = str.indexOf('=') + 1;
-            str = str.mid(pos, str.size() - pos);
-        } else str.clear();
-        if (!str.isEmpty())
+        if (!m_check.contains(ui) && !m_urls.contains(ui))
         {
-            replaceSpec(str);
-            str = QUrl::fromPercentEncoding(str.toAscii());
-            str = str.trimmed();
-            //str.remove(QRegExp("^[\\d]*;(URL=)?", Qt::CaseInsensitive));
-
-            if (!str.contains(QChar('\'')) &&
-                !str.contains(QChar('"')) &&
-                !str.contains(QChar('[')) &&
-                str != QString("\\") &&
-                str.size() > 0)
-            {
-                QUrl url;
-                if (str.startsWith(QString("http://")))
-                    url = QUrl(str);
-                else if (str.startsWith(QChar('#')))
-                    url = QUrl();
-                else
-                    url = parent.resolved(QUrl(str));
-
-                if (url.hasFragment()) url.setFragment(QString());
-                if (url.path().isEmpty()) url.setPath(QString("/"));
-
-                if (url.isValid() && WebManager::compareHost(m_domainInfo.domain(), url.host())) {
-                    url.setHost(m_domainInfo.domain());
-                    UrlInfo ui(url, parent);
-                    if (!m_check.contains(ui) && !m_urls.contains(ui))
-                    {
-                        m_check.insert(ui);
-                        if (m_max_count_limit == (m_check.size() + m_urls.size() + 1))
-                            break;
-                    }
-                } else {
-                    //qDebug(QString("SKIP %1").arg(url.toString()).toAscii());
-                }
-            }
+            m_check.insert(ui);
+            if (m_max_count_limit == (m_check.size() + m_urls.size() + 1))
+                break;
         }
-
-        pos += reg.matchedLength();
     }
-}
-
-QString & DomainManager::replaceSpec(QString & str)
-{
-    return str.replace(QString("&amp;"), QString("&"), Qt::CaseInsensitive)
-            .replace(QString("&gt;"), QString(">"), Qt::CaseInsensitive)
-            .replace(QString("&lt;"), QString("<"), Qt::CaseInsensitive);
 }
 
 void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse & prev)
@@ -220,7 +172,7 @@ void DomainManager::on_manager_ready(const WebResponse & live, const WebResponse
     if ((live.code() / 100) == 3)
     {
         QUrl redirect(live.location());
-        if (WebManager::compareHost(m_domainInfo.domain(), redirect.host()) || WebManager::compareHost(m_domainInfo.host(), redirect.host()))
+        if (DomainHelper::compareHost(m_domainInfo.domain(), redirect.host()) || DomainHelper::compareHost(m_domainInfo.host(), redirect.host()))
         {
             redirect.setHost(m_domainInfo.domain());
             UrlInfo ui(redirect, m_current.parent());

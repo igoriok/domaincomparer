@@ -32,11 +32,12 @@ public:
 public slots:
     // Внешние слоты
     void check();
+    void check(const DomainInfo & domainInfo);
     void abort();
 
 signals:
     // Сигналы
-    void checking(const QUrl & url, int total, int checked);
+    void checking();
     void checked(const UrlInfo & ui);
     void ready();
 
@@ -61,7 +62,6 @@ private:
     // Вспомогательные функции
     void checkNext();
     void findNewUrls(const QUrl & parent, const QString & html);
-    QString & replaceSpec(QString & str);
 
 protected slots:
     // Внутренние слоты

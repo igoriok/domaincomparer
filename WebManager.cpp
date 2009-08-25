@@ -1,4 +1,5 @@
 #include "WebManager.h"
+#include "DomainHelper.h"
 #include <QVariant>
 #include <QStringList>
 
@@ -70,29 +71,16 @@ void WebManager::abort()
     if (live != NULL)
     {
         live->abort();
-        live->deleteLater();
         live = NULL;
     }
     if (prev != NULL)
     {
         prev->abort();
-        prev->deleteLater();
         prev = NULL;
     }
 
     _temp.clear();
     _domain.clear();
-}
-
-bool WebManager::compareHost(QString orig, QString comp)
-{
-    orig.toLower();
-    comp.toLower();
-    if (orig.startsWith(QString("www.")))
-        orig.remove(0, 4);
-    if (comp.startsWith(QString("www.")))
-        comp.remove(0, 4);
-    return (orig == comp);
 }
 
 void WebManager::on_manager_finished(QNetworkReply * reply)
@@ -102,7 +90,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
     if (reply == live) live = NULL;
     else if (reply == prev) prev = NULL;
 
-    qDebug(QByteArray("Finished ").append(reply->url().toString()));
+    //qDebug(QByteArray("Finished ").append(reply->url().toString()));
 
     if (reply->error() == QNetworkReply::OperationCanceledError)
     {
@@ -137,7 +125,7 @@ void WebManager::on_manager_finished(QNetworkReply * reply)
 
         WebResponse current(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), type.split(QChar(';')).at(0), redirect, data, length);
 
-        if (((current.code() / 100) == 3) && compareHost(_domain, current.location().host()) && request.url().scheme() == current.location().scheme())
+        if (((current.code() / 100) == 3) && DomainHelper::compareHost(_domain, current.location().host()) && request.url().scheme() == current.location().scheme())
         {
             QUrl url(request.url());
             url.setPath(current.location().path());

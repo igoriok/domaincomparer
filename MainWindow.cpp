@@ -56,58 +56,77 @@ void MainWindow::updateDomainInfo(const DomainInfo & domainInfo)
     ui->lineEdit_State->setText(domainInfo.stateString());
 }
 
-void MainWindow::on_dmanager_checking(const QUrl & url, int total, int checked)
+void MainWindow::on_dmanager_checking()
 {
-    ui->statusBar->showMessage(url.toString());
-    current_total->setText(QString::number(total));
-    current_checked->setText(QString::number(checked));
+    // Выводим информацию о текущем запросе
+    ui->statusBar->showMessage(dmanager->current().toString());
+    current_total->setText(QString::number(dmanager->total()));
+    current_checked->setText(QString::number(dmanager->count()));
 }
 
 void MainWindow::on_dmanager_ready()
 {
+    // Сохраняем результаты в базу
     m_db->insertDomain(dmanager->domainInfo());
     m_db->insertDomainResult(dmanager->domainInfo().domain(), dmanager->result());
 
+    // Получаем следующий елемент в списке доменов
     m_index = ui->listView_Domains->model()->index(m_index.row() + 1, 0);
 
+    // Если список не полон
     if (m_index.isValid())
     {
-        dmanager->init(m_db->getDomainInfo(ui->listView_Domains->model()->data(m_index).toString()));
-        dmanager->check();
+        // Запускаем проверку домена
+        dmanager->check(m_db->getDomainInfo(ui->listView_Domains->model()->data(m_index).toString()));
     }
     else
     {
-        updateListModel(m_db->getDomainsModel());
-        ui->actionStart->setEnabled(true);
+        //updateListModel(m_db->getDomainsModel());
+        // Включаем кнопку "Старт"
+        on_actionStop_triggered();
     }
 }
 
 void MainWindow::on_dmanager_checked(const UrlInfo & ui)
 {
-    this->ui->statusBar->showMessage(ui.url().toString());
+    //this->ui->statusBar->showMessage(ui.url().toString());
 }
 
 void MainWindow::on_actionStart_triggered()
 {
+    // Получаем первый домен в списке
     m_index = ui->listView_Domains->model()->index(0, 0);
     if (m_index.isValid())
     {
+        // Выключаем кнопку "Старт"
         ui->actionStart->setEnabled(false);
-        dmanager->init(m_db->getDomainInfo(ui->listView_Domains->model()->data(m_index).toString()));
-        dmanager->check();
+        ui->actionSkip->setEnabled(true);
+        dmanager->check(m_db->getDomainInfo(ui->listView_Domains->model()->data(m_index).toString()));
     }
 }
 
 void MainWindow::on_actionSkip_triggered()
 {
-    dmanager->abort();
-    on_dmanager_ready();
+    if (m_index.isValid())
+    {
+        // Прекращаем текущую обработку
+        dmanager->abort();
+        // Вызываем окончание обработки домена вручную
+        on_dmanager_ready();
+    }
 }
 
 void MainWindow::on_actionStop_triggered()
 {
+    // Прекращаем текущую обработку
     dmanager->abort();
     m_index = QModelIndex();
+    // Очищаем информацию
+    ui->statusBar->clearMessage();
+    current_total->clear();
+    current_checked->clear();
+    // Включаем кнопку
+    ui->actionStart->setEnabled(true);
 }
 
 void MainWindow::on_actionAppend_triggered()

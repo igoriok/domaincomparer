@@ -12,14 +12,16 @@ SOURCES += main.cpp \
     DomainManager.cpp \
     UrlInfo.cpp \
     DatabaseManager.cpp \
-    DomainInfo.cpp
+    DomainInfo.cpp \
+    DomainHelper.cpp
 HEADERS += MainWindow.h \
     WebManager.h \
     WebResponse.h \
     DomainManager.h \
     UrlInfo.h \
     DatabaseManager.h \
-    DomainInfo.h
+    DomainInfo.h \
+    DomainHelper.h
 FORMS += MainWindow.ui \
     AddRange.ui
 OTHER_FILES += db.s3db \

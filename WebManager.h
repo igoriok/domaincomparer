@@ -17,8 +17,6 @@ public:
     void get(const QUrl & url, const QHostAddress & host = QHostAddress());
     void abort();
 
-    static bool compareHost(QString orig, QString comp);
-
 signals:
     void sending(const QString & method, const QUrl & url);
     void ready(const WebResponse & live, const WebResponse & prev);

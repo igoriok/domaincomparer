@@ -36,7 +36,7 @@ protected:
     void updateDomainInfo(const DomainInfo & domainInfo);
 
 protected slots:
-    void on_dmanager_checking(const QUrl & url, int total, int checked);
+    void on_dmanager_checking();
     void on_dmanager_ready();
     void on_dmanager_checked(const UrlInfo & ui);
 
